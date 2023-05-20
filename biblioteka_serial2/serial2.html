@@ -1,0 +1,492 @@
+<html>
+<head>
+<title>Serial Communication for WIN32</title>
+<link rel="stylesheet" type="text/css" media="screen" href="_styles.css">
+</head>
+<body leftmargin=0 topmargin=0 marginheight=0 marginwidth=0>
+<script language=JavaScript>numMenus = 0;</script>
+<script language=JavaScript src="_menu.js"></script>
+<BR><BR><center><a href="/WEB/advanced/serial2.php3"><font color='#FFFFFF'>BACK</font></a></center>
+<BR>
+<center>
+<table cellspacing=10 border=0>
+<tr width="100%"><td>
+&nbsp;</td>
+<td><table cellspacing=0 border=0>
+<tr bgcolor="#FFFFFF"><td width=20>&nbsp;</td>
+<td><img src="tetraedre.gif" align="right" /><BR>
+<BR>
+
+
+<h1>Serial Communication for WIN32</h1>
+<div class="description">
+by <a href="mailto:developer@tetraedre.com">Thierry Schneider</a>
+<ul>
+    <li>First Release April 8th 2001
+    <li>revised April 14th 2001, minor corrections
+    <li>revised April 24th 2001, modification for Visual C++
+    <li>revised April 29th 2001, correction of bugs that occured during reconnection
+    <li>revised May 14th 2001, The sertest.cpp example contains a prototype error for Connect()
+    <li>February 1st 2002, New Version (V2.0) completely updated. Handles modems directly
+    <li>Revised <B>June 22nd 2002</B>, Tserial_event class updated to correct one bug,
+    wait for the thread termination before quiting or restarting. New "owner" 
+    field added to ease interfacing with C++.
+</ul>
+<BR><HR><BR>
+</div>
+
+<H3>Foreword</h3>
+<div class="description">
+<b>If you experience any problem using this software, please be
+sure that you have the latest version. Check our web site <a href="http://www.tetraedre.com">www.tetraedre.com
+</a> for an updated version of the software.&nbsp;<br>
+Otherwise report any bug to the address above or check the FAQ</b>
+<br>
+<br>
+<br>
+<br>
+Here it is. Finally, I think I've reached the final step in serial communication
+programmation on Win32. This new version (V2.1) is much more structured
+when the previous one. I can handle either 1-byte exchange (like a UART)
+or arrays of byte. The application is 100% event-driven on the user side
+(the object itself is using one thread). And more important of all, this
+new version handles also modem specific signals like CD and RI. CD allows
+you to know if the modem is connected (to the other modem) or if you are
+in command mode. And RI is the RING indicator.
+<br>With this version, you can make whatever you like (like for example
+implementing PPP or simulating a microcontroller's UART)
+<br>
+</div>
+
+
+<h3>Download</h3>
+<div class="description">
+I've removed the "non event-driven" version since I believe it is not so
+usefull. Anyway, you can still download the V1.x package here 
+(<a href="serial.zip">serial.zip</a>) or read its documentation 
+<a href="serial1.php3">here</a><BR>.
+The version 2 can be downloaded here (<a href="serial2.zip">serial2.zip</a>).
+<br>
+</div>
+
+<h3>Feedback</h3>
+<div class="description">
+I hope that this version will be the ultimate library for the serial port.
+I hope to receive your comments about it. Since the version 1.x was downloaded
+more than 4'000 times in 8 months, I hope this one will be even better.
+If you like this software, please let me know, 'cause I like to know what
+people think of my work.<br>
+<br>
+Please find hereafter the updated version of the documentation.
+<br>
+<br>
+Bye
+<br><a href="mailto:developer@tetraedre.com">Thierry Schneider</a>
+<br>
+</div>
+
+<hr ALIGN=LEFT SIZE=3 WIDTH="100%">
+
+<h2>Documentation</h2>
+<div class="description">Each programmer knows that accessing the hardware ports of
+a computer is getting more and more complicated. The software presented
+here intends to ease the development of applications using the serial port
+(COM) on computer running Windows 32-bits operating systems.<BR>
+<BR>
+Allen Denver, from the Microsoft Windows Developer Support wrote one
+of the only technical article describing in details how to use the serial
+port under Win32. This article can be downloaded on Microsoft's web site.
+A copy of this article can also be found <a href="msdn_serial.htm">here</a>.
+<br>
+<br>
+From that article, I've written two different software packages. You
+are currently reading the documentation of version 2.x which is an "event-driven"
+communication component. I define it event-driven since there is no busy
+loop, no blocking waiting inside the whole software. Everything is done
+on events, and can thus be very easily integrated inside a Windows application
+(with user interface).<BR>
+<BR>
+All software and documentation described here can be downloaded directly
+here : <a href="serial2.zip">serial2.zip</a><BR>
+<BR>
+This software was developed with C++ Borland Builder 5 and tested also
+with Visual C++ 6.<BR>
+<BR>
+If you have questions, don't hesitate to send me an email (<a href="mailto:developer@tetraedre.com">developer@tetraedre.com</a>)
+and/or visit our website (<a href="http://www.tetraedre.com">www.tetraedre.com</a>)
+to read the FAQ (look inside the developer's corner)<BR>
+<BR>
+</div>
+
+<hr ALIGN=LEFT SIZE=3 WIDTH="100%">
+<h3>Compilation with Borland C++ Builder</h3>
+<div class="description">
+The ZIP file contains two Borland C++ project files (serialtest.bpr). Simply
+open them, compile, run and enjoy !<BR>
+<BR>
+</div>
+
+
+
+<h3>Compilation with Microsoft Visual C++</h3>
+<div class="description">
+The project was originally created to be compiled with the Borland C++
+Builder development environment. In order to permit compilation&nbsp; with
+Microsoft's Visual C++, I've modified a little the source code. A "#ifdef
+__BORLANDC__" has been inserted in the header part of the <i>serialtest.cpp</i>
+file in order to skip some Borland's specific pre-compiler commands.<br>
+<br>
+<b>IMPORTANT</b>
+<br>But more important. The event-driven application uses multithreading
+in order to generate the events. So Visual C++ projects that use multithreading
+must be compiled with the appropriate setting. In your project settings,
+you MUST choose the multithreaded run-time library, otherwise the programme
+will not compile
+<br>&nbsp;
+<br>&nbsp;
+<pre>
+Project settings
+   |
+   *--- C/C++
+          |
+          *--- Code generation
+                       |
+                       *---- Use run-time library
+                                     |
+                                     *---- Multithreaded
+</pre>                                     
+</div>
+
+
+<hr WIDTH="100%">
+<h3>Events description</h3>
+<div class="description">
+Before going into details, I would like to describe a little bit the concept
+that I used here: In order to work with the serial port, you need to create
+a Tserial_event object and configure it. In particular you must specify
+a "manager". This is a callback function used by the serial object to notify
+events. Seven kind of events can occur:
+<ol>
+    <li>SERIAL_CONNECTED</li>
+    <li>SERIAL_DISCONNECTED</li>
+    <li>SERIAL_DATA_SENT</li>
+    <li>SERIAL_DATA_ARRIVAL</li>
+    <li>SERIAL_RING</li>
+    <li>SERIAL_CD_ON</li>
+    <li>SERIAL_CD_OFF</li>
+</ol>
+These events will help managing the serial port (or the modem) successfully
+and efficiently. They are also usefull to manipulate input and output message
+buffers.
+<BR>
+<BR>
+
+
+
+<table border=1 cellspacing=2 cellpadding=2>
+<tr><th>Event</th><th>Description</th></tr>
+
+<tr>
+    <td>SERIAL_CONNECTED</td>
+    <td>This event is generated when the serial port is opened and ready to
+    work. If the port is not opened successfully, the <b>connect </b>returns
+    directly with an error value</td>
+</tr>
+
+<tr>
+    <td>SERIAL_DISCONNECTED</td>
+    <td>This event is generated when the serial communication is closed. This
+    might occur either after you called <b>disconnect</b> or if an error occured</td>
+</tr>
+
+<tr>
+    <td>SERIAL_DATA_SENT</td>
+    <td>This event is generated when the data you want to transmit have been
+    passed to the device driver (this doesn't mean that they reached the other
+    side of the serial cable). This event will allow you to send further outgoing
+    message and thus avoiding output buffer overflow. If you send only one
+    byte after the other, this event is similar to the UART's "TX EMPTY" IRQ.</td>
+</tr>
+
+<tr>
+    <td>SERIAL_DATA_ARRIVAL</td>
+    <td>This event is generated when data are received. You can specify how
+    much data you would like to receive by calling <b>setRxSize</b>, but this
+    doesn't mean that you will receive that number of data. Once again, if
+    you specify an RxSize of 1, then the event is similar to the UART's "RX
+    FULL" IRQ.</td>
+</tr>
+
+<tr>
+    <td>SERIAL_RING</td>
+    <td>This event is generated when a RING occurs on your telephone line (if
+    you have a modem and if you specified to notify modem's events).</td>
+</tr>
+
+<tr>
+    <td>SERIAL_CD_ON</td>
+    <td>This event is generated when the modem is connected to the other modem
+    (for example after an "ATDT" command). For example, if you want to implement
+    PPP, this will tell you if you can send modem's command (ATZ,...) or if
+    you can send PPP messages.</td>
+</tr>
+
+<tr>
+    <td>SERIAL_CD_OFF</td>
+    <td>This event is the opposite of CD_ON, it indicates when the communication
+    with the other modem dropped.</td>
+</tr>
+</table>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<hr ALIGN=LEFT SIZE=3 WIDTH="100%">
+<h3>Software API</h3>
+<div class="description">
+<br>You may download the following files:
+<BR><BR>
+
+<table border=0>
+<tr>
+    <td><li><a href="tserial_event.h">tserial_event.h</a></li></td>
+    <td>Header file for the serial_event communication object&nbsp;</td>
+</tr>
+
+<tr>
+    <td><li><a href="tserial_event.cpp">tserial_event.cpp</a></li></td>
+    <td>C++ source file for the serial_event communication object</td>
+</tr>
+
+<tr>
+    <td><li><a href="serialtest.cpp">serialtest.cpp</a></li></td>
+    <td>Simple application using the serial_event communication object</td>
+</tr>
+
+</table>
+
+<br>
+<br>
+</div>
+
+
+<h4>Methods</h4>
+<div class="description">
+<table BORDER >
+
+<tr>
+    <th>Function</font></th>
+    <th>Description</th>
+</tr>
+
+<tr>
+    <td>Tserial_event()</td>
+    <td>Object creation</td>
+</tr>
+
+<tr>
+    <td>~Tserial_event()</td>
+    <td>Object destruction</td>
+</tr>
+
+<tr>
+<td>int connect (char *port_arg, int rate_arg, serial_parity parity_arg,
+int ByteSize, bool modem_events)</td>
+
+<td>Serial port setup and start of connection&nbsp;
+
+<ul>
+    <li>port_arg : "COM1", "COM2", ...</li>
+    <li>rate_arg : 19200, 9600, ...</li>
+    <li>parity_arg : spNONE, spODD, spEVEN</li>
+    <li>ByteSize : size of data transmitted (7 or 8 bits)</li>
+    <li>modem_event : indicates if you want to receive CD and RING events</li>
+</ul>
+Returns 0 if no error occured</td>
+</tr>
+
+<tr>
+    <td>void setManager(type_myCallBack manager)</td>
+    <td>Specify the event manager of this communication object. This is the
+    address of the callback function.</td>
+</tr>
+
+<tr>
+    <td>void setRxSize(int size)</td>
+    <td>Specifiy the size of the data to read from the port. Note that this
+    might not always be the size of the data actually read. To know this value,
+    use the getDataInSize().</td>
+</tr>
+
+<tr>
+<td>void sendData(char *buffer, int size)</td>
+
+<td>Transmit the message array to the output driver. This buffer is copied
+internally and should not be longer than SERIAL_MAX_TX, so the buffer may
+be freed directly after the call. You should never call this function is
+you have not received a SERIAL_DATA_SENT event (or if it's the first write).</td>
+</tr>
+
+<tr>
+<td>int getNbrOfBytes (void)</td>
+
+<td>Returns the number of bytes waiting in the input buffer. Not very usefull.</td>
+</tr>
+
+<tr>
+<td>int getDataInSize (void)</td>
+
+<td>Returns the number of data that have been read.</td>
+</tr>
+
+<tr>
+<td>char *getDataInBuffer (void)</td>
+
+<td>Returns a pointer to the buffer where the data read are stored. Since
+this memory location is used by the serial object, you MUST call dataHasBeenRead()
+once you finished reading the data, and you should not access the buffer
+after that.&nbsp;</td>
+</tr>
+
+<tr>
+<td>void dataHasBeenRead (void)</td>
+
+<td>Calling this function will tell the serial object that you have read
+the incoming data and that it can continue to read further incoming data.
+If you do not call this function, the port is not read anymore.</td>
+</tr>
+
+<tr>
+<td>void disconnect (void)</td>
+
+<td>Disconnect the serial port.</td>
+</tr>
+</table>
+
+<br>
+<br>
+</div>
+
+<h4>Events</h4>
+<div class="description">
+When an event occurs, the serial object call the callback function (if
+not null). This function must have the following prototype:
+<pre>void SerialEventManager(uint32 object, uint32 event)</pre>
+where <i>uint32&nbsp;</i> is an unsigned long.<br>
+<br>
+The <b>object</b> field is the address of the serial communication object
+that has called the callback function.
+<br><b>event</b> is the event kind that occured. It can be any of the seven
+values described above. For six of them, the event is notified with no
+additionnal data. The SERIAL_DATA_ARRIVAL is associated with data. These
+one can be retrieved by calling <b>getDataInSize</b> and <b>getDataInBuffer</b>,
+like described hereafter.
+<br>&nbsp;
+
+<pre>
+void SerialEventManager(uint32 object, uint32 event)
+{
+    char *buffer;
+    int   size;
+    Tserial_event *com;
+
+    com = (Tserial_event *) object;
+    if (com!=0)
+    {
+        switch(event)
+        {
+            case  SERIAL_CONNECTED  :
+                                        printf("Connected ! \n");
+                                        break;
+            case  SERIAL_DISCONNECTED  :
+                                        printf("Disonnected ! \n");
+                                        break;
+            case  SERIAL_DATA_SENT  :
+                                        printf("Data sent ! \n");
+                                        break;
+            case  SERIAL_RING       :
+                                        printf("DRING ! \n");
+                                        break;
+            case  SERIAL_CD_ON      :
+                                        printf("Carrier Detected ! \n");
+                                        break;
+            case  SERIAL_CD_OFF     :
+                                        printf("No more carrier ! \n");
+                                        break;
+            case  SERIAL_DATA_ARRIVAL  :
+                                        size   = com->getDataInSize();
+                                        buffer = com->getDataInBuffer();
+                                        OnDataArrival(size, buffer);
+                                        com->dataHasBeenRead();
+                                        break;
+        }
+    }
+}
+
+</pre>
+</div>
+
+
+
+<H4>Interfacing with C++</H4>
+<div class="description">
+One of the major problem encoutered here is the fact that the SerialEventManager
+functio is a C function and not the method of a C++ object. Using C++ callback
+is not as easy as using C callback.<BR>
+In order to solve partially this problem, use the owner field of the Tserial_event
+class. You can give him the address of a C++ object to be called by the callback
+function.<BR>
+
+<pre>
+    com->owner = (void *) object1;
+</pre>
+Where object1 is a pointer to a Tmyobject having a method named <BR>
+<pre>SerialCallback(Tserial_event *com_source, uint32 event);</pre>
+So in the callback function you can do the following stuff:
+
+<pre>
+void SerialEventManager(uint32 object, uint32 event)
+{
+    Tserial_event *com;
+    Tmyobject *object;
+
+    com = (Tserial_event *) object;
+    if (com!=0)
+    {
+        object = (Tmyobject *) com->owner;
+        if (object!=0)
+            object->SerialCallback(com, event);
+    }
+}
+</pre>
+</div>
+
+
+<BR>
+<BR>
+<HR width="80%">
+<BR>
+<center>Tetraedre Company Copyright &copy;2000-2003</center>
+<BR>
+</td>
+<td width=20>&nbsp;</td>
+</tr>
+</table>
+</center>
+</tr>
+</table>
+<BR><BR><center><a href="/WEB/advanced/serial2.php3"><font color='#FFFFFF'>BACK</font></a></center>
+<BR>
+</body>
+</html>
+
+
+

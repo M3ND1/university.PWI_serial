@@ -1,0 +1,10 @@
+1. przyjmować po jednym znaku (dane z COMa) //done
+2. podzielić data_in na odebrane odpowiedzi rozkazuf (rozdzielność znakiem windowsowego entera) //done
+3. zlokować wątki mutexem -> rozwiązać problem dwóch wątków dostających się w tym samym momencie do jednego wektora stringow (data_in) //done +/-
+4. kolejka rozkazów //done +/-
+12:55
+
+//11.05
+5. dokonczyc gtk_entry z komenatrzy w cpp (linia 161) 
+6. zrobic wysylanie sygnalu z queue (wysylac polecenia do mikro)
+7. 

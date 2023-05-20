@@ -1,0 +1,9 @@
+TODO
+1. Opcje 
+- wpisywanie stringu (w celu wybrania odpowiedniego coma)
+- 
+2. Przycisk po kliknieciu niekatywny
+3. Przycisk połączenia
+4. logi zostawiamy
+5. KOM to komenda xD
+6. Przycisk funckja rysuje nam funckje dla temperatury
