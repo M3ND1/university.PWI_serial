@@ -154,7 +154,7 @@ std::string getCurrentTimestamp()
 
 // ========================================================================================================================
 
-void logtx (std::string str) {
+void logtx (std::string& str) {
 
     GtkTextBuffer *buffer;
     GtkTextIter iter;
@@ -174,6 +174,12 @@ extern "C" G_MODULE_EXPORT void on_window_main_destroy () {
     com->disconnect();
     delete com;
     com = 0;
+
+    //deleting threads
+    delete sendThread ;
+    delete interpretThread ;
+    sendThread =0;
+    interpretThread =0;
 
     gtk_main_quit ();
 }
@@ -275,8 +281,7 @@ void orderInterpreter()
         }
         std::lock_guard<std::mutex> guard2(mutexFirstCommand);
         firstCommand.clear();
-        sent=false;
-    }
+        }
     else{
         logtx("jestem w orderInterpreter, else chce zbudowac ordery\n");
         orderReceivedBuilder();
@@ -287,13 +292,14 @@ void orderInterpreter()
 
 void checkOrders() //wywolywac co jakis czas zeby wysylac ordery
 {
+    std::lock_guard<std::mutex> guard2(mutexFirstCommand);
+    std::lock_guard<std::mutex> guard(mutexOrdersToSend);
     logtx("jestem w chceckOrders, sprawdzam if" +  getCurrentTimestamp() +"\n");
     if(firstCommand.empty() && !ordersToSend.empty())
     {
-        std::lock_guard<std::mutex> guard(mutexOrdersToSend);
         logtx("jestem w chceckOrders, if, number of orders to send:"+ std::to_string(ordersToSend.size()) +"\n");
-        std::lock_guard<std::mutex> guard2(mutexFirstCommand);
         firstCommand = ordersToSend.front();
+        sent=false;
         logtx("jestem w chceckOrders w if: first command= "+firstCommand+"\n");
         ordersToSend.pop();
     }
@@ -307,7 +313,7 @@ void checkOrders() //wywolywac co jakis czas zeby wysylac ordery
 
 void send_command()
 {
-    std::lock_guard<std::mutex> guard(mutexFirstCommand);
+    //std::lock_guard<std::mutex> guard(mutexFirstCommand);
     char* buf = const_cast<char*>(firstCommand.c_str());
     com->sendData(buf,sizeof(buf));
     sent=true;
@@ -318,7 +324,7 @@ void SEND_THREAD()
     while(1)
     {
         checkOrders();
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
 
@@ -384,7 +390,7 @@ int main( int argc, char *argv[]) {
 
 // ========================================================================================================================
 
-    gtk_main(); // w tej petli program okienkowy tkwi, dopóki go nie zakonczymy przyciskiem 'X'
+    gtk_main(); // w tej petli program okienkowy tkwi, dopï¿½ki go nie zakonczymy przyciskiem 'X'
 
 
 
