@@ -42,7 +42,6 @@
     std::mutex mutexFirstCommand;
     std::queue<std::string> ordersToSend;
     std::string firstCommand;
-    std::pair<std::string,std::string> firstReceive;
     std::thread *sendThread;
     std::thread *interpretThread;
 
@@ -78,7 +77,7 @@ void OnDataArrival(int size, char *buffer)
         if(*buffer=='\r')
         {
             std::lock_guard<std::mutex> guard2(mutexTimeVector);
-            timeVector.push(getCurrentTimestamp());
+            timeVector.push("time"/*getCurrentTimestamp()*/);
         }
 
     }
@@ -103,13 +102,14 @@ void SerialEventManager(void* object, uint32 event)    // BYLO: void SerialEvent
         {
             case  SERIAL_CONNECTED  :
                                         logtx("Connected ! \n");
-                                       sendThread = new std::thread (SEND_THREAD);
-                                       interpretThread = new std::thread(INTERPRET_THREAD);
+
                                        sendThread->join();
                                        interpretThread->join();
                                         break;
             case  SERIAL_DISCONNECTED  :
                                         logtx("Disonnected ! \n");
+                                        sendThread->detach();
+                                        interpretThread->detach();
                                         break;
             case  SERIAL_DATA_SENT  :
                                         logtx("Data sent ! \n");
@@ -154,7 +154,7 @@ std::string getCurrentTimestamp()
 
 // ========================================================================================================================
 
-void logtx (std::string& str) {
+void logtx (std::string str) {
 
     GtkTextBuffer *buffer;
     GtkTextIter iter;
@@ -232,11 +232,11 @@ void on_gtk_button_1_clicked (GtkButton *button, gpointer user_data) {
 //    std::lock_guard<std::mutex> guard(mutexDataIn);
 //    data_in.clear();
     //std::string command = std::string (gtk_entry_get_text(GTK_ENTRY(gtk_entry_1))); ///pobierz komende z pola tekstowego
-
+    std::lock_guard<std::mutex> guard(mutexOrdersToSend);
     if(ordersToSend.empty())//checkCommand(command)) ///sprawdz czy komenda jest poprawna
     {
         int n=100;
-        std::lock_guard<std::mutex> guard(mutexOrdersToSend);
+
         //ordersToSend.push("STA\n\r");
         ordersToSend.push("LED0\n\r");
         ordersToSend.push("LED1\n\r");
@@ -261,7 +261,7 @@ void on_gtk_button_1_clicked (GtkButton *button, gpointer user_data) {
 void orderInterpreter()
 {
     std::lock_guard<std::mutex> guard(mutexReceivedOrders);
-    logtx("jestem w orderInterpreter, sprawdzam if" +  getCurrentTimestamp() +"\n");
+    logtx("jestem w orderInterpreter, sprawdzam if\n" /*+  getCurrentTimestamp() +"\n"*/);
     if(!receivedOrders.empty())
     {
         std::string receivedOrderData = receivedOrders.front().first;
@@ -280,6 +280,7 @@ void orderInterpreter()
         }
         std::lock_guard<std::mutex> guard2(mutexFirstCommand);
         firstCommand.clear();
+        sent = false;
         }
     else{
         logtx("jestem w orderInterpreter, else chce zbudowac ordery\n");
@@ -293,12 +294,12 @@ void checkOrders() //wywolywac co jakis czas zeby wysylac ordery
 {
     std::lock_guard<std::mutex> guard2(mutexFirstCommand);
     std::lock_guard<std::mutex> guard(mutexOrdersToSend);
-    logtx("jestem w chceckOrders, sprawdzam if" +  getCurrentTimestamp() +"\n");
+    logtx("jestem w chceckOrders, sprawdzam if\n" /*+  getCurrentTimestamp() +"\n"*/);
     if(firstCommand.empty() && !ordersToSend.empty())
     {
         logtx("jestem w chceckOrders, if, number of orders to send:"+ std::to_string(ordersToSend.size()) +"\n");
         firstCommand = ordersToSend.front();
-        sent=false;
+//        sent=false;
         logtx("jestem w chceckOrders w if: first command= "+firstCommand+"\n");
         ordersToSend.pop();
     }
@@ -323,7 +324,7 @@ void SEND_THREAD()
     while(1)
     {
         checkOrders();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
 
@@ -332,7 +333,7 @@ void INTERPRET_THREAD()
     while(1)
     {
         orderInterpreter();
-        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
 
@@ -380,7 +381,8 @@ int main( int argc, char *argv[]) {
             //com->sendData("Hello World\n");
             com->setRxSize(1);
 
-
+           sendThread = new std::thread (SEND_THREAD);
+           interpretThread = new std::thread(INTERPRET_THREAD);
         }
         else
             logtx("ERROR : com->connect (" + std::to_string(error) + ")\n");

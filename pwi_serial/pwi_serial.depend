@@ -15769,7 +15769,34 @@
 	<stdio.h>
 	<windows.h>
 
-1684588922 source:c:\users\mendi\source\repos\cpp\2023\pwi\z5\pwi_serial\main.cpp
+1684605064 source:c:\users\mendi\source\repos\cpp\2023\pwi\z5\pwi_serial\main.cpp
+	<vector>
+	<mutex>
+	<queue>
+	<gtk/gtk.h>
+	<iostream>
+	<chrono>
+	<ctime>
+	<sstream>
+	<iomanip>
+	<string>
+	<thread>
+	"Tserial_event.h"
+
+1682504662 source:c:\users\mendi\source\repos\cpp\2023\pwi\pwi_serial\pwi_serial\tserial_event.cpp
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<process.h>
+	<conio.h>
+	<windows.h>
+	"Tserial_event.h"
+
+1682503556 c:\users\mendi\source\repos\cpp\2023\pwi\pwi_serial\pwi_serial\tserial_event.h
+	<stdio.h>
+	<windows.h>
+
+1684602874 source:c:\users\mendi\source\repos\cpp\2023\pwi\pwi_serial\pwi_serial\main.cpp
 	<vector>
 	<mutex>
 	<queue>
