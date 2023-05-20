@@ -103,10 +103,10 @@ void SerialEventManager(void* object, uint32 event)    // BYLO: void SerialEvent
         {
             case  SERIAL_CONNECTED  :
                                         logtx("Connected ! \n");
-//                                        sendThread = new std::thread (SEND_THREAD);
-//                                        interpretThread = new std::thread(INTERPRET_THREAD);
-//                                        sendThread->join();
-//                                        interpretThread->join();
+                                       sendThread = new std::thread (SEND_THREAD);
+                                       interpretThread = new std::thread(INTERPRET_THREAD);
+                                       sendThread->join();
+                                       interpretThread->join();
                                         break;
             case  SERIAL_DISCONNECTED  :
                                         logtx("Disonnected ! \n");
@@ -239,24 +239,23 @@ void on_gtk_button_1_clicked (GtkButton *button, gpointer user_data) {
         std::lock_guard<std::mutex> guard(mutexOrdersToSend);
         //ordersToSend.push("STA\n\r");
         ordersToSend.push("LED0\n\r");
+        ordersToSend.push("LED1\n\r");
 
 //        ordersToSend.push("NBS\n\r");
         while(n--)
         {
             ordersToSend.push("RD1\n\r");
-            ordersToSend.push("LED1\n\r");
-            ordersToSend.push("LED0\n\r");
         }
         ordersToSend.push("LED0\n\r");
         gtk_entry_set_text(GTK_ENTRY(gtk_entry_1),"");
     }
-    int n=100;
-    while(n--)
-    {
-        checkOrders();
-        orderInterpreter();
-        Sleep(200);
-    }
+    // int n=100;
+    // while(n--)
+    // {
+    //     checkOrders();
+    //     orderInterpreter();
+    //     Sleep(200);
+    // }
 }
 
 void orderInterpreter()
