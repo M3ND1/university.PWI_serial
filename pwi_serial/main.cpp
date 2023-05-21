@@ -96,12 +96,12 @@ void serialEventManager(void* object, uint32 event)    // BYLO: void serialEvent
             case  SERIAL_CONNECTED  :
                                         logtx(" Connected ! \n");
                                         threadsWork =TRUE;
-                                        g_timeout_add(1000,orderInterpreter,gtk_text_view_1);
-                                        g_timeout_add(1000,checkOrders,gtk_text_view_1);
+                                        g_timeout_add(500,orderInterpreter,gtk_text_view_1);
+                                        g_timeout_add(200,checkOrders,gtk_text_view_1);
                                         break;
             case  SERIAL_DISCONNECTED  :
                                         logtx("Disonnected ! \n");
-                                        threadsWork =FALSE;
+                                        threadsWork = FALSE;
                                         break;
             case  SERIAL_DATA_SENT  :
                                         logtx("Data sent ! \n");
@@ -234,7 +234,7 @@ void on_gtk_button_1_clicked (GtkButton *button, gpointer user_data)
         std::lock_guard<std::mutex> guard(mutexOrdersToSend);
         ordersToSend.push("LED0\n\r");
         ordersToSend.push("LED1\n\r");
-        ordersToSend.push("NBS\n\r");
+//        ordersToSend.push("NBS\n\r");
         gtk_label_set_text(GTK_LABEL(gtk_label_1), (std::string("Ilosc RD "+std::to_string(n))).c_str());
         while(n--)
         {
@@ -261,13 +261,13 @@ gboolean orderInterpreter(gpointer data)
             logtx(receivedOrderTime + ' ' + receivedOrderData);
 
         }
-        else{
-            //odczyt z komendy
+        else
+        {//odczyt z komendy
             logtx(receivedOrderTime + ' ' + receivedOrderData);
+            std::lock_guard<std::mutex> guard2(mutexFirstCommand);
+            firstCommand.clear();
         }
-        std::lock_guard<std::mutex> guard2(mutexFirstCommand);
-        firstCommand.clear();
-        }
+    }
     else{
         //logtx("jestem w orderInterpreter, else chce zbudowac ordery\n");
         orderReceivedBuilder();
