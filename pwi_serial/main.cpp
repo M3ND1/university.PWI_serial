@@ -10,6 +10,8 @@
 #include <iomanip> // put_time
 #include <string>  // string
 #include <thread>
+#include <fstream>
+#include <algorithm>
 
 #if defined(_WIN32) || defined(WIN32)
 //    #include <gdk/gdkwin32.h>
@@ -26,8 +28,11 @@
     GError      *gerror = NULL;
 
     GtkWidget   *gtk_window_1;
-    GtkWidget   *gtk_button_1;
+    GtkWidget   *gtk_button_execute;
+    GtkWidget   *gtk_button_connection;
+    GtkWidget   *gtk_button_saveLogs;
     GtkWidget   *gtk_entry_1;
+    GtkWidget   *gtk_entry_2;
     GtkWidget   *gtk_label_1;
     GtkWidget   *gtk_text_view_1;
 
@@ -47,6 +52,7 @@
     std::queue<std::string> ordersToSend;
     bool sent= false;
     gboolean threadsWork = FALSE;
+    int error = 0;
 
 // ========================================================================================================================
 
@@ -97,11 +103,14 @@ void serialEventManager(void* object, uint32 event)    // BYLO: void serialEvent
                                         logtx(" Connected ! \n");
                                         threadsWork =TRUE;
                                         g_timeout_add(500,orderInterpreter,gtk_text_view_1);
-                                        g_timeout_add(200,checkOrders,gtk_text_view_1);
+                                        gtk_widget_set_sensitive(gtk_button_connection,FALSE);
+                                        gtk_widget_set_sensitive(gtk_button_execute,TRUE);
                                         break;
             case  SERIAL_DISCONNECTED  :
                                         logtx("Disonnected ! \n");
                                         threadsWork = FALSE;
+                                        gtk_widget_set_sensitive(gtk_button_connection,TRUE);
+                                        gtk_widget_set_sensitive(gtk_button_execute,FALSE);
                                         break;
             case  SERIAL_DATA_SENT  :
                                         logtx("Data sent ! \n");
@@ -215,7 +224,7 @@ void parseString(std::string& stringToParse)
 
 // ========================================================================================================================
 
-void on_gtk_button_1_clicked (GtkButton *button, gpointer user_data)
+void on_gtk_button_execute_clicked (GtkButton *button, gpointer user_data)
 {
 //    if(!threadsWork)
 //    {
@@ -226,22 +235,69 @@ void on_gtk_button_1_clicked (GtkButton *button, gpointer user_data)
 //    else{
 //        threadsWork=FALSE;
 //    }
+    gtk_widget_set_sensitive(gtk_button_execute,FALSE);
     if(ordersToSend.empty())
     {
 
         int n = std::atoi(std::string (gtk_entry_get_text(GTK_ENTRY(gtk_entry_1))).c_str());
         if(!n) n=100;
         std::lock_guard<std::mutex> guard(mutexOrdersToSend);
-        ordersToSend.push("LED0\n\r");
         ordersToSend.push("LED1\n\r");
+       // ordersToSend.push("LED1\n\r");
 //        ordersToSend.push("NBS\n\r");
-        gtk_label_set_text(GTK_LABEL(gtk_label_1), (std::string("Ilosc RD "+std::to_string(n))).c_str());
-        while(n--)
-        {
-            ordersToSend.push("RD1\n\r");
-        }
-        ordersToSend.push("LED0\n\r");
+//        gtk_label_set_text(GTK_LABEL(gtk_label_1), (std::string("Ilosc RD "+std::to_string(n))).c_str());
+//        while(n--)
+//        {
+//            ordersToSend.push("RD1\n\r");
+//        }
+        //ordersToSend.push("LED0\n\r");
         gtk_entry_set_text(GTK_ENTRY(gtk_entry_1),"");
+    }
+        g_timeout_add(200,checkOrders,gtk_text_view_1);
+}
+
+void on_gtk_button_saveLogs_clicked(GtkButton* button, gpointer data)
+{
+    std::fstream file;
+    std::string name = "Logs " + getCurrentTimestamp().substr(0,19) + ".txt";
+    std::replace(name.begin(),name.end(),':','-');
+//    gtk_widget_set_sensitive(gtk_button_saveLogs, FALSE);
+    file.open(name,std::ios::out);
+    if(file.good())
+    {
+        GtkTextIter startIter;
+        GtkTextIter endIter;
+        GtkTextBuffer *buffer=gtk_text_view_get_buffer ( GTK_TEXT_VIEW(gtk_text_view_1));
+        gtk_text_buffer_get_start_iter(buffer,&startIter);
+        gtk_text_buffer_get_end_iter (buffer, &endIter);
+        file <<gtk_text_buffer_get_text(buffer,&startIter,&endIter,-1 );
+        file.close();
+    }
+    else
+    {
+        logtx("There was a problem opening file " + name+ '\n');
+    }
+//    gtk_widget_set_sensitive(gtk_button_saveLogs, TRUE);
+
+}
+
+void on_gtk_button_connect_clicked(GtkButton* button, gpointer data)
+{
+    std::string comName = std::string (gtk_entry_get_text(GTK_ENTRY(gtk_entry_2))).c_str();
+    //fix come higher than 9
+    if (com!=0)
+    {
+        com->setManager(serialEventManager);
+        error = com->connect(const_cast<char*>(comName.c_str()), 9600, SERIAL_PARITY_NONE, 8, true);
+        if (!error)
+        {
+            com->setRxSize(1);
+            logtx("Name: "+comName+"\n");
+
+        }
+        else
+            logtx("ERROR : com->connect (" + std::to_string(error) + ") Name: "+comName+"\n");
+
     }
 }
 
@@ -296,6 +352,11 @@ gboolean checkOrders(gpointer data) //wywolywac co jakis czas zeby wysylac order
         //logtx("jestem w chceckOrders, sprawdzam if sent, nie wyslalo wiec wysylam\n");
         sendCommand();
     }
+    if(firstCommand.empty() && ordersToSend.empty())
+    {
+        gtk_widget_set_sensitive(gtk_button_execute,TRUE);
+        return FALSE;
+    }
     return threadsWork;
 }
 
@@ -314,22 +375,30 @@ int main( int argc, char *argv[]) {
 
     // wczytamy widgety z pliku *.glade za pomoca GtkBuilder
     gbuilder = gtk_builder_new();
-    if ( !gtk_builder_add_from_file(gbuilder, "pwi_serial.glade", &gerror) ) { // jesli wystapill blad
+    if ( !gtk_builder_add_from_file(gbuilder, "pwi_serial_nasze.glade", &gerror) ) { // jesli wystapill blad
         // klasa diagnostyczna powinna zapisac do pliku: "GBuilder error: " + std::string(gerror->message)
         g_free( gerror );
         return( 1 ); // wyjscie z programu z kodem informacji o bledzie
     }
 
     gtk_window_1 = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_window_1" ) );
-    gtk_button_1 = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_button_1" ) );
+    gtk_button_execute = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_button_execute" ) );
+    gtk_button_connection = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_button_connection" ) );
+    gtk_button_saveLogs = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_button_saveLogs" ) );
     gtk_entry_1 = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_entry_1" ) );
+    gtk_entry_2 = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_entry_2" ) );
     gtk_label_1 = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_label_1" ) );
     gtk_text_view_1 = GTK_WIDGET ( gtk_builder_get_object( gbuilder, "gtk_text_view_1" ) );
 
     gtk_builder_connect_signals( gbuilder, NULL );  // w tym projekcie automatyczne podpiecie tylko on_window_main_destroy()
     g_object_unref ( G_OBJECT( gbuilder ) );     // mozna juz usunac gbuilder
 
-    g_signal_connect ( gtk_button_1, "clicked", G_CALLBACK(on_gtk_button_1_clicked), NULL );   // reczne podpiecie funkcji do sygnalu 'clicked' dla widgetu gtk_button_1
+    g_signal_connect ( gtk_button_execute, "clicked", G_CALLBACK(on_gtk_button_execute_clicked), NULL );   // reczne podpiecie funkcji do sygnalu 'clicked' dla widgetu gtk_button_execute
+    gtk_widget_set_sensitive(gtk_button_execute,FALSE);
+
+    g_signal_connect ( gtk_button_connection, "clicked", G_CALLBACK(on_gtk_button_connect_clicked), NULL );   // reczne podpiecie funkcji do sygnalu 'clicked' dla widgetu gtk_button_execute
+
+    g_signal_connect ( gtk_button_saveLogs, "clicked", G_CALLBACK(on_gtk_button_saveLogs_clicked), NULL );   // reczne podpiecie funkcji do sygnalu 'clicked' dla widgetu gtk_button_execute
 
     gtk_window_set_default_size ( GTK_WINDOW(gtk_window_1), 800, 650 );
     gtk_window_set_position ( GTK_WINDOW(gtk_window_1), GTK_WIN_POS_CENTER );
@@ -338,23 +407,10 @@ int main( int argc, char *argv[]) {
 // ========================================================================================================================
 
     // utworzenie obiektu Tserial_event i proba inicjacji polaczenia RS
-    int error = 0;
+
 
     com = new Tserial_event();
-    if (com!=0)
-    {
-        com->setManager(serialEventManager);
-        error = com->connect("COM5", 115200, SERIAL_PARITY_NONE, 8, true);
-        if (!error)
-        {
-            //com->sendData("Hello World\n");
-            com->setRxSize(1);
 
-        }
-        else
-            logtx("ERROR : com->connect (" + std::to_string(error) + ")\n");
-
-    }
 
 // ========================================================================================================================
     g_idle_add(logtxgtk,gtk_text_view_1);
